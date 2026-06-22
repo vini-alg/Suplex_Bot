@@ -16,6 +16,7 @@ from typing import Optional
 import numpy as np
 import streamlit as st
 import plotly.graph_objects as go
+from PIL import Image
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent))
 
@@ -25,9 +26,12 @@ from src.backend.llm_parser import parse_natural_language, list_available_models
 
 # ─────────────────────────── Page config ─────────────────────────────────────
 
+_ICON_PATH = Path(__file__).resolve().parent.parent.parent / "doc" / "src" / "small_icon.png"
+_PAGE_ICON = Image.open(_ICON_PATH)
+
 st.set_page_config(
-    page_title="Suplex Bot – Simplex Solver",
-    page_icon="🔢",
+    page_title="Project Suplex – Simplex Optimization",
+    page_icon=_PAGE_ICON,
     layout="wide",
     initial_sidebar_state="expanded",
 )
@@ -53,6 +57,13 @@ _init_state()
 # ─────────────────────────── Sidebar ─────────────────────────────────────────
 
 with st.sidebar:
+    st.image(str(_ICON_PATH), width="stretch")
+    st.markdown(
+        "<h2 style='text-align:center; margin-top:0.2rem; margin-bottom:0;'>Project Suplex</h2>"
+        "<p style='text-align:center; color:gray; margin-top:0;'><em>Simplex Optimization</em></p>",
+        unsafe_allow_html=True,
+    )
+    st.divider()
     st.title("⚙️ Configurações")
     policy = st.selectbox("Regra de entrada (pivot)", ["largest", "bland", "smallest"], index=0)
     decimals = st.slider("Casas decimais", 2, 8, 4)

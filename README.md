@@ -1,4 +1,8 @@
-# Suplex Bot 🔢
+# Project Suplex — Simplex Optimization
+
+<p align="center">
+  <img src="doc/src/big_icon.png" width="320" alt="Project Suplex – Simplex Optimization"/>
+</p>
 
 Solucionador do **Método Simplex** (Fase I + Fase II) com interface web interativa e integração com LLM local (Llama 3 via Ollama).
 
@@ -147,7 +151,8 @@ Suplex_Bot/
 ├── examples/
 │   ├── example_2var.txt
 │   ├── example_3var.txt
-│   └── example_phase1.txt      ← exemplo com Fase I (restrições >=)
+│   ├── example_phase1.txt      ← exemplo com Fase I (restrições >=)
+│   └── example_multi_vertex.txt ← 5 vértices, bom para visualização do gráfico
 └── src/
     ├── backend/
     │   ├── utils.py            ← parser + conversão FPI

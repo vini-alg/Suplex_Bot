@@ -37,21 +37,23 @@ DICA DE IGUALDADE: Se o texto disser que A = B, converta para 1*A - 1*B = 0.
 RESPONDA APENAS com o bloco abaixo. Substitua os valores, mas mantenha as tags [OBJ], [ST] e [BOUNDS] intactas:
 
 -NUM_VAR:
-x1, x2, ..., xN
-
--OBJ:
-MAX or MIN: <coef>*x1 + <coef>*x2 + ...
+    x1, x2, ..., xN
 
 -BOUNDS:
-[x1 >= 0]
-[x2 <= 0]
-[x3 livre]
+    [x1 >= 0]
+    [x2 <= 0]
+    [x3 livre]
+
+-OBJ:
+    MAX or MIN: <coef>*x1 + <coef>*x2 + ...
 
 -ST:
-[<coef>*x1 + <coef>*x2 + ... <= <rhs>]
-[<coef>*x1 + <coef>*x2 + ... == <rhs>]
-[<coef>*x1 + <coef>*x2 + ... >= <rhs>]
-REGRA CRÍTICA: Lembre-se sempre de deixar todas as variaveis à esquerda da igualdade/inequalidade.
+    [<coef>*x1 + <coef>*x2 + ... <= <rhs>]
+    [<coef>*x1 + <coef>*x2 + ... == <rhs>]
+    [<coef>*x1 + <coef>*x2 + ... >= <rhs>]
+REGRAS CRÍTICAS:
+- Lembre-se sempre de deixar todas as variaveis à esquerda da igualdade/inequalidade.
+- Use somente "." para separar floats/decimais, não use nenhum outro simbolo em números.
 """
 
 # ─────────────────────────── Stage 2 prompt: format only ─────────────────────
@@ -70,13 +72,54 @@ Regras de cada índice do array "lp_lines":
   Índice 3: Coeficientes da função objetivo separados por espaço. Ex: "40 30 60".
   Índices 4+: Cada restrição no formato exato "<coef1> <coef2> ... <sinal> <rhs>". Ex: "1 1 0 == 10000".
 
-EXEMPLO DE SAÍDA ESPERADA:
-{"lp_lines": ["3", "3", "1 0 -1", "40 30 60", "20 -3 1 <= 15000", "1 -1 0 == 10000", "0 0 1 >= 2000"]}
+EXEMPLO:
+    ENTRADA:
+        -NUM_VAR:
+            x1, x2, x3
+        -BOUNDS:
+            [x1 >= 0]
+            [x2 <= 0]
+            [x3 livre]
+        -OBJ:
+            MAX: 2*x1 + 3*x2 + 5*x3
+        -ST:
+            [3*x1 + 2*x2 + 5*x3 <= 15]
+            [10 <= 2*x1 + 3*x2 + 0*x3]
+            [1*x1 == 2*x2]
+
+    LOGICA:
+        3 variaveis (len(NUM_VAR))
+        3 restrições (len(ST))
+        dominio: 1 -1 0 (x1 >= 0, x2 <= 0, x3 livre)
+        objetivo: 2 3 5 (Como é MAX, *(+1), coeficiente xi para cada coluna == i)
+        restrições: 3 2 5 <= 15, 2 3 0 <= 10, 1 -2 0 == 0 (isolando variaveis do lado esquerdo e mantendo coeficientes xi tal que coluna == i)
+
+    SAÍDA ESPERADA:
+        {"lp_lines": ["3", "3", "1 -1 0", "2 3 5", "3 2 5 <= 15", "2 3 0 <= 10", "1 -2 0 == 0"]}
 
 REGRAS CRÍTICAS:
+- Primeiro tome nota de quantas variaveis (colunas) todas as linhas devem ter.
+- Lembre-se de isolar as variaveis à esquerda da inequalidade/igualdade, caso necessário inverta o simbolo das variaveis.
+- Preencha para cada variavel ou coeficiente não presente na linha com 0 mantendo sempre o mesmo numero de colunas.
 - Extraia apenas os NÚMEROS dos coeficientes das restrições. Nunca escreva "x1" ou "*". 
-- Mantenha os coeficientes à esquerda da inequalidade/igualdade.
-- Preencha para cada variavel não presente na linha com 0.
+"""
+
+# ─────────────────────────── Repair prompt (fallback) ────────────────────────
+
+_PROMPT_REPAIR = """\
+A tentativa anterior de formatar um problema de PL como JSON falhou.
+Abaixo estão as duas saídas intermediárias. Use-as para produzir o JSON correto.
+
+FORMATO OBRIGATÓRIO:
+{{"lp_lines": ["<n_vars>", "<n_cons>", "<dominio>", "<objetivo>", "<restricao1>", ...]}}
+
+NÃO escreva nada além do objeto JSON. Sem texto, sem markdown.
+
+SAÍDA INTERMEDIÁRIA 1 (descrição matemática):
+{rationale}
+
+SAÍDA INTERMEDIÁRIA 2 (tentativa anterior, mal formatada):
+{raw}
 """
 
 # ─────────────────────────── Result dataclass ────────────────────────────────
@@ -117,7 +160,7 @@ def parse_natural_language(problem_text: str, model: str = OLLAMA_MODEL) -> LLMR
 
     # ── Stage 1: understand & simplify (plain text, no JSON pressure) ─────────
     rationale, err1 = _call_ollama(
-        client, model, _PROMPT_SIMPLIFY, problem_text, temperature=0.3
+        client, model, _PROMPT_SIMPLIFY, problem_text, temperature=0.1
     )
     if err1:
         return LLMResult(lp_file="", rationale="", raw_response="", error=err1)
@@ -130,17 +173,35 @@ def parse_natural_language(problem_text: str, model: str = OLLAMA_MODEL) -> LLMR
         return LLMResult(lp_file="", rationale=rationale, raw_response="", error=err2)
 
     # ── Parse JSON from stage-2 response ──────────────────────────────────────
+    def _extract_lp(data: dict) -> str:
+        lines = [str(l) for l in data["lp_lines"]]
+        return "\n".join(lines)
+
     try:
-        data = json.loads(_extract_json(raw))
-        if "lp_lines" in data:
-            lp_file = "\n".join(str(l) for l in data["lp_lines"])
-        else:
-            lp_file = data.get("lp_file", "").strip()
-        return LLMResult(lp_file=lp_file, rationale=rationale, raw_response=raw)
-    except (json.JSONDecodeError, KeyError) as exc:
+        return LLMResult(lp_file=_extract_lp(json.loads(_extract_json(raw))),
+                         rationale=rationale, raw_response=raw)
+    except (json.JSONDecodeError, KeyError, IndexError):
+        pass
+
+    # ── Stage 3 (repair): last-chance correction ──────────────────────────────
+    repair_prompt = _PROMPT_REPAIR.format(rationale=rationale, raw=raw)
+    fixed, err3 = _call_ollama(client, model, repair_prompt, "", temperature=0.0)
+    if err3:
         return LLMResult(
             lp_file="", rationale=rationale, raw_response=raw,
-            error=f"Falha ao interpretar JSON (etapa 2): {exc}\n\nResposta bruta:\n{raw}",
+            error=f"Falha ao interpretar JSON (etapa 2) e etapa de reparo falhou: {err3}",
+        )
+    try:
+        return LLMResult(lp_file=_extract_lp(json.loads(_extract_json(fixed))),
+                         rationale=rationale, raw_response=fixed)
+    except (json.JSONDecodeError, KeyError, IndexError) as exc:
+        return LLMResult(
+            lp_file="", rationale=rationale, raw_response=fixed,
+            error=(
+                f"Falha ao interpretar JSON após reparo: {exc}\n\n"
+                f"Saída original (etapa 2):\n{raw}\n\n"
+                f"Saída do reparo:\n{fixed}"
+            ),
         )
 
 
@@ -149,7 +210,7 @@ def _call_ollama(
     model: str,
     system_prompt: str,
     user_text: str,
-    temperature: float = 0.1,
+    temperature: float = 0,
 ) -> tuple[str, Optional[str]]:
     """Call Ollama chat and return (content, error). error is None on success."""
     try:

@@ -156,7 +156,6 @@ def to_fpi(lp: LP) -> FPI:
     slack_cols: List[np.ndarray] = []
     slack_names: List[str] = []
     slack_c: List[float] = []
-    slack_idx = len(col_names)
 
     for i in range(m):
         s_name = f"s{i+1}"

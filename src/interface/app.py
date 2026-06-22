@@ -74,8 +74,15 @@ tab_setup, tab_llm, tab_diary = st.tabs([
 #  Helper functions (must be defined before the tab code that calls them)
 # ══════════════════════════════════════════════════════════════════════════════
 
+EXAMPLES_DIR = Path(__file__).resolve().parent.parent.parent / "examples"
+
+
 def _example_text() -> str:
     return "2\n2\n1 1\n5 4\n6 1 <= 6\n1 1 <= 4"
+
+
+def _list_examples() -> list[Path]:
+    return sorted(EXAMPLES_DIR.glob("*.txt"))
 
 
 def _build_feasible_region_plot(lp: LP, result: SolveResult, decimals: int) -> go.Figure:
@@ -273,6 +280,12 @@ with tab_setup:
 
     # ── Text input ────────────────────────────────────────────────────────────
     else:
+        examples = _list_examples()
+        example_names = ["(nenhum)"] + [p.name for p in examples]
+        selected = st.selectbox("📂 Carregar exemplo", example_names, key="example_select")
+        if selected != "(nenhum)":
+            st.session_state.lp_text = (EXAMPLES_DIR / selected).read_text(encoding="utf-8")
+
         st.session_state.lp_text = st.text_area(
             "Cole ou escreva o arquivo de entrada",
             value=st.session_state.lp_text or _example_text(),

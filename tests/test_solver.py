@@ -1,5 +1,5 @@
 """
-tests/test_solver.py – Unit tests for the Simplex solver (utils + suplex).
+tests/test_solver.py – Unit tests for the Simplex solver (utils + simplex).
 
 Covers:
   - Small  (2 vars, 2 constraints)  – optimal
@@ -20,7 +20,7 @@ import numpy as np
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
 from src.backend.utils import parse_text, to_fpi
-from src.backend.suplex import solve
+from src.backend.simplex import solve
 
 
 # ─────────────────────────── helpers ─────────────────────────────────────────

@@ -286,7 +286,7 @@ class TestLLMIntegration:
 
     @pytest.mark.parametrize("name,problem_text,expected_vars,expected_cons", PROBLEMS)
     def test_lp_is_solvable(self, name, problem_text, expected_vars, expected_cons):
-        from src.backend.suplex import solve
+        from src.backend.simplex import solve
         result = parse_natural_language(problem_text)
         if result.error:
             pytest.skip("Pipeline error")

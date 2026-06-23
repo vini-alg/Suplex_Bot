@@ -21,7 +21,7 @@ from PIL import Image
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent))
 
 from src.backend.utils import parse_text, to_fpi, LP, format_tableau
-from src.backend.suplex import solve, SolveResult
+from src.backend.simplex import solve, SolveResult
 from src.backend.llm_parser import parse_natural_language, list_available_models, OLLAMA_MODEL
 
 # ─────────────────────────── Page config ─────────────────────────────────────
@@ -170,14 +170,26 @@ def _build_feasible_region_plot(lp: LP, result: SolveResult, decimals: int) -> g
 
     if result.x_primal is not None:
         ox, oy = float(result.x_primal[0]), float(result.x_primal[1])
+        label = f"Ótimo Z={result.z:.{decimals}f}"
         fig.add_trace(go.Scatter(
             x=[ox], y=[oy],
             mode="markers+text",
-            name=f"Ótimo Z={result.z:.{decimals}f}",
+            name=label,
             marker=dict(size=14, color="#e74c3c", symbol="star"),
             text=[f"Z={result.z:.{decimals}f}"],
             textposition="top right",
         ))
+        for k, alt in enumerate(result.alternate_solutions):
+            if len(alt) >= 2:
+                ax, ay = float(alt[0]), float(alt[1])
+                fig.add_trace(go.Scatter(
+                    x=[ax], y=[ay],
+                    mode="markers+text",
+                    name=f"Ótimo Alt {k+1} Z={result.z:.{decimals}f}",
+                    marker=dict(size=14, color="#8e44ad", symbol="star"),
+                    text=[f"Alt {k+1}"],
+                    textposition="top left",
+                ))
 
     fig.update_layout(
         xaxis_title="x₁", yaxis_title="x₂",
@@ -312,7 +324,7 @@ with tab_setup:
     with col_info:
         if st.session_state.result:
             r: SolveResult = st.session_state.result
-            status_color = {"otimo": "🟢", "inviavel": "🔴", "ilimitado": "🟡"}.get(r.status, "⚪")
+            status_color = {"otimo": "🟢", "otimo_multiplos": "🟢", "inviavel": "🔴", "ilimitado": "🟡"}.get(r.status, "⚪")
             st.markdown(f"**Status**: {status_color} `{r.status.upper()}`   |   "
                         f"**Z** = `{r.z:.{decimals}f}` " if r.z is not None else f"**Status**: {status_color} `{r.status.upper()}`")
 
@@ -359,7 +371,7 @@ with tab_setup:
         st.caption(f"Passo {idx}/{max_step}  |  Base: {[result.var_names[i] if i < len(result.var_names) else f'col{i}' for i in b]}")
 
     # ── Plotly 2D graph ───────────────────────────────────────────────────────
-    if result and result.status == "otimo":
+    if result and result.status in ("otimo", "otimo_multiplos"):
         try:
             lp_check = parse_text(st.session_state.lp_text)
             if lp_check.n_vars == 2:
@@ -441,9 +453,9 @@ with tab_diary:
         st.info("Nenhuma resolução executada ainda. Vá à aba **Setup** e clique em **Resolver**.")
     else:
         if result:
-            badge = {"otimo": "🟢 ÓTIMO", "inviavel": "🔴 INVIÁVEL", "ilimitado": "🟡 ILIMITADO"}.get(result.status, result.status)
+            badge = {"otimo": "🟢 ÓTIMO", "otimo_multiplos": "🟢 ÓTIMO (MÚLTIPLOS)", "inviavel": "🔴 INVIÁVEL", "ilimitado": "🟡 ILIMITADO"}.get(result.status, result.status)
             st.markdown(f"### Resultado Final: {badge}")
-            if result.status == "otimo":
+            if result.status in ("otimo", "otimo_multiplos"):
                 st.markdown(f"**Z ótimo** = `{result.z:.{decimals}f}`")
 
                 cols = st.columns(2)
@@ -451,6 +463,12 @@ with tab_diary:
                     st.markdown("**Solução Primal**")
                     for j, name in enumerate(result.var_names):
                         st.markdown(f"- `{name}` = **{result.x_primal[j]:.{decimals}f}**")
+                    if result.alternate_solutions:
+                        st.markdown("**Soluções Alternativas**")
+                        for k, alt in enumerate(result.alternate_solutions):
+                            vals = ", ".join(f"`{result.var_names[j]}`=**{alt[j]:.{decimals}f}**"
+                                            for j in range(len(result.var_names)))
+                            st.markdown(f"- Alt {k+1}: {vals}")
                 with cols[1]:
                     st.markdown("**Solução Dual (preços-sombra)**")
                     for i, yi in enumerate(result.y_dual):

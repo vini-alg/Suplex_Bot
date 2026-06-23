@@ -51,9 +51,10 @@ RESPONDA APENAS com o bloco abaixo. Substitua os valores, mas mantenha as tags [
     [<coef>*x1 + <coef>*x2 + ... <= <rhs>]
     [<coef>*x1 + <coef>*x2 + ... == <rhs>]
     [<coef>*x1 + <coef>*x2 + ... >= <rhs>]
-REGRAS CRÍTICAS:
-- Lembre-se sempre de deixar todas as variaveis à esquerda da igualdade/inequalidade.
-- Use somente "." para separar floats/decimais, não use nenhum outro simbolo em números.
+
+-REASONING: 
+    <Explique em um breve paragrafo a logica por tras da modelagem, como cada variavel é correspondente a qual no problema>
+
 """
 
 # ─────────────────────────── Stage 2 prompt: format only ─────────────────────
@@ -83,19 +84,19 @@ EXEMPLO:
         -OBJ:
             MAX: 2*x1 + 3*x2 + 5*x3
         -ST:
-            [3*x1 + 2*x2 + 5*x3 <= 15]
-            [10 <= 2*x1 + 3*x2 + 0*x3]
-            [1*x1 == 2*x2]
+            [3x1 + 2x2 + 5x3 <= 15]
+            [10 <= 2x3]
+            [1x1 == 2x2] 
 
     LOGICA:
         3 variaveis (len(NUM_VAR))
         3 restrições (len(ST))
         dominio: 1 -1 0 (x1 >= 0, x2 <= 0, x3 livre)
         objetivo: 2 3 5 (Como é MAX, *(+1), coeficiente xi para cada coluna == i)
-        restrições: 3 2 5 <= 15, 2 3 0 <= 10, 1 -2 0 == 0 (isolando variaveis do lado esquerdo e mantendo coeficientes xi tal que coluna == i)
+        restrições: 3 2 5 <= 15, 0 0 2 <= 10, 1 -2 0 == 0 (isolando variaveis do lado esquerdo e mantendo coeficientes cxi tal que coluna == i e c é o coeficiente, caso não tenha o c considere 1, caso falte algum ou varios xi considere todos como 0)
 
     SAÍDA ESPERADA:
-        {"lp_lines": ["3", "3", "1 -1 0", "2 3 5", "3 2 5 <= 15", "2 3 0 <= 10", "1 -2 0 == 0"]}
+        {"lp_lines": ["3", "3", "1 -1 0", "2 3 5", "3 2 5 <= 15", "0 0 2 <= 10", "1 -2 0 == 0"]}
 
 REGRAS CRÍTICAS:
 - Primeiro tome nota de quantas variaveis (colunas) todas as linhas devem ter.

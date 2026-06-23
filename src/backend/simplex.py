@@ -1,5 +1,5 @@
 """
-suplex.py – Simplex Method solver (Phase I + Phase II) from scratch.
+simplex.py – Simplex Method solver (Phase I + Phase II) from scratch.
 
 Tableau layout  (each row is a numpy 1-D slice):
   rows 0..m-1  : constraint rows  [A | b]
@@ -21,7 +21,7 @@ EPS = 1e-9   # numerical zero tolerance
 
 @dataclass
 class SolveResult:
-    status: str                   # 'otimo' | 'inviavel' | 'ilimitado'
+    status: str                   # 'otimo' | 'otimo_multiplos' | 'inviavel' | 'ilimitado'
     z: Optional[float]
     x_primal: Optional[np.ndarray]
     y_dual: Optional[np.ndarray]
@@ -30,6 +30,7 @@ class SolveResult:
     tableau_history: List[np.ndarray] = field(default_factory=list)
     basis_history: List[List[int]] = field(default_factory=list)
     logs: List[str] = field(default_factory=list)
+    alternate_solutions: List[np.ndarray] = field(default_factory=list)
 
 
 # ─────────────────────────── Pivot selection rules ───────────────────────────
@@ -279,6 +280,47 @@ def phase_one(
     return tableau_fpi, basis_aux, var_names_fpi
 
 
+# ─────────────────────────── Multiple-optima detection ──────────────────────
+
+def _find_alternate_solutions(
+    tableau: np.ndarray,
+    basis: List[int],
+    n_structural: int,
+) -> List[np.ndarray]:
+    """
+    After reaching optimality, check each non-basic structural variable for
+    zero reduced cost.  For each such variable, pivot it in on a copy of the
+    tableau to obtain the alternate optimal BFS.
+    Returns a (possibly empty) list of full x_primal vectors.
+    """
+    m = tableau.shape[0] - 1
+    n_total = tableau.shape[1] - 1
+    basis_set = set(basis)
+    alternates: List[np.ndarray] = []
+
+    for j in range(n_structural):
+        if j in basis_set or abs(tableau[-1, j]) >= EPS:
+            continue
+        ratios = [
+            (tableau[i, -1] / tableau[i, j], i)
+            for i in range(m) if tableau[i, j] > EPS
+        ]
+        if not ratios:
+            continue
+        leave_row = min(ratios)[1]
+        tab = tableau.copy()
+        bas = list(basis)
+        _pivot(tab, leave_row, j)
+        bas[leave_row] = j
+        x = np.zeros(n_total, dtype=float)
+        for i, b in enumerate(bas):
+            if b < n_total:
+                x[b] = tab[i, -1]
+        alternates.append(x)
+
+    return alternates
+
+
 # ─────────────────────────── Tableau builder helpers ─────────────────────────
 
 def _build_tableau(c: np.ndarray, A: np.ndarray, b: np.ndarray, basis: List[int]) -> np.ndarray:
@@ -419,19 +461,28 @@ def solve(
         if slack_col < n_total:
             y_dual[i] = -tableau[-1, slack_col]   # y_i = -c̄_{s_i} for <= constraints
 
+    # ── Detect multiple optimal solutions ────────────────────────────────────
+    n_structural = fpi.n_original + fpi.n_free_aux
+    alternates = _find_alternate_solutions(tableau, basis, n_structural)
+    final_status = "otimo_multiplos" if alternates else "otimo"
+
     _log("=" * 60)
-    _log(f"STATUS: ÓTIMO")
+    _log(f"STATUS: {'ÓTIMO (MÚLTIPLOS)' if alternates else 'ÓTIMO'}")
     _log(f"Valor ótimo Z = {z:.{decimals}f}")
     _log("Solução Primal:")
     for j, name in enumerate(var_names):
         _log(f"  {name} = {x_primal[j]:.{decimals}f}")
+    if alternates:
+        _log(f"Soluções alternativas ({len(alternates)} encontrada(s)):")
+        for k, alt in enumerate(alternates):
+            _log(f"  Alt {k+1}: " + "  ".join(f"{name}={alt[j]:.{decimals}f}" for j, name in enumerate(var_names)))
     _log("Solução Dual (preços-sombra):")
     for i, yi in enumerate(y_dual):
         _log(f"  y{i+1} = {yi:.{decimals}f}")
     _log("=" * 60)
 
     return SolveResult(
-        status="otimo",
+        status=final_status,
         z=z,
         x_primal=x_primal,
         y_dual=y_dual,
@@ -440,4 +491,5 @@ def solve(
         tableau_history=t_history,
         basis_history=b_history,
         logs=logs,
+        alternate_solutions=alternates,
     )

@@ -1,0 +1,37 @@
+1. Uma marcenaria deseja maximizar seu lucro na produção de dois itens: cadeiras e mesas. Cada cadeira vendida gera um lucro de R$ 50, enquanto cada mesa gera R$ 120. 
+A produção é limitada por dois recursos principais: madeira e horas de trabalho. A marcenaria possui 300 kg de madeira no estoque e dispõe de 110 horas de trabalho no mês. 
+Para fabricar uma cadeira, gastam-se 5 kg de madeira e 2 horas de trabalho. Para fabricar uma mesa, são necessários 20 kg de madeira e 3 horas de trabalho. 
+Naturalmente, a quantidade produzida de mesas e cadeiras não pode ser negativa.
+
+gabarito: 
+    Cadeiras a produzir: 52
+    Mesas a produzir: 2
+    Lucro Máximo: R$ 2.840
+
+2. Uma startup de tecnologia precisa alocar recursos físicos para rodar dois tipos de serviços na sua rede: Nós RPC da Solana e Servidores de Inferência de IA.
+Cada tipo de servidor tem suas próprias demandas e gerações de receita:
+    -Cada Nó RPC gera uma receita de R$ 300 por dia e exige 2 TB de memória RAM e 3 Gbps de banda de rede dedicada (gRPC).
+    -Cada Servidor de Inferência gera uma receita de R$ 500 por dia e exige 4 TB de memória RAM e 2 Gbps de banda de rede dedicada.
+O data center da startup possui um limite máximo físico de 100 TB de memória RAM e 90 Gbps de banda disponíveis. Além disso, existem diretrizes contratuais de negócio:
+    -Para manter a redundância mínima exigida pelos investidores, a startup precisa ter pelo menos 15 servidores totais operando (somando os dois tipos).
+    -A demanda máxima de mercado no momento suporta o aluguel de no máximo 20 Servidores de Inferência simultâneos (ligar mais que isso não gera receita extra).
+Qual é a quantidade ideal de cada servidor a ser ativada para maximizar a receita diária?
+
+gabarito:
+    Nós RPC a ativar: 20
+    Servidores de Inferência a ativar: 15
+    Receita Máxima Diária: R$ 13.500
+
+3. Uma fábrica produz dois modelos de monitores de computador: o modelo Padrão e o modelo Profissional. A produção passa por dois departamentos: Montagem e Testes.
+    -Cada monitor Padrão gera um lucro de 100 €. Requer 2 horas de montagem e 1 hora de testes.
+    -Cada monitor Profissional gera um lucro de 200 €. Requer 4 horas de montagem e 3 horas de testes.
+As capacidades da fábrica por semana são limitadas:
+    -O departamento de Montagem tem um máximo de 80 horas disponíveis.
+    -O departamento de Testes tem um máximo de 60 horas disponíveis.
+O objetivo da fábrica é maximizar o lucro semanal.
+
+gabarito:
+    O lucro é o mesmo! A fábrica tem a flexibilidade de escolher produzir:
+    -Só 20 monitores Profissionais.
+    -Só 40 monitores Padrão.
+    -Ou qualquer combinação linear entre esses dois extremos (como 20 Padrão e 10 Profissionais), e o lucro será sempre o máximo de 4.000 €.

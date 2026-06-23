@@ -34,15 +34,22 @@ NÃO escreva o significado das variáveis. NÃO adicione texto explicativo entre
 REGRA DE ALINHAMENTO (CRÍTICA): A função objetivo e todas as restrições devem conter TODAS as variáveis do problema. Se uma variável não fizer parte de uma linha, declare-a explicitamente multiplicada por zero (ex: + 0*x3). 
 DICA DE IGUALDADE: Se o texto disser que A = B, converta para 1*A - 1*B = 0.
 
-RESPONDA APENAS com o bloco abaixo. Substitua os valores, mas mantenha as tags [OBJ], [ST] e [BOUNDS] intactas:
+[OBJ] é a função objetivo, [BOUNDS] são os intervalos de cada variavel (positiva, negativa ou livre) e [ST] são as restrições de sistema (não inclua os BOUNDS aqui, cuidado).
+Lembre-se de separar cada elemento com "[]".
+RESPONDA APENAS com o bloco abaixo. Substitua os valores, mas mantenha as tags [OBJ], [BOUNDS], [ST] e [REASONING] intactas:
+
+-REASONING: 
+    <Explique em um breve paragrafo a logica por tras da modelagem, como cada variavel é correspondente a qual no problema>
 
 -NUM_VAR:
     x1, x2, ..., xN
 
 -BOUNDS:
-    [x1 >= 0]
-    [x2 <= 0]
-    [x3 livre]
+    [<simbol>, <simbol>, ..., <simbol>]
+    simbol = 
+        R+, caso a variavel seja nao negativa
+        R-, caso a variavel seja nao positiva
+        R, caso a variavel seja livre
 
 -OBJ:
     MAX or MIN: <coef>*x1 + <coef>*x2 + ...
@@ -51,9 +58,6 @@ RESPONDA APENAS com o bloco abaixo. Substitua os valores, mas mantenha as tags [
     [<coef>*x1 + <coef>*x2 + ... <= <rhs>]
     [<coef>*x1 + <coef>*x2 + ... == <rhs>]
     [<coef>*x1 + <coef>*x2 + ... >= <rhs>]
-
--REASONING: 
-    <Explique em um breve paragrafo a logica por tras da modelagem, como cada variavel é correspondente a qual no problema>
 
 """
 
@@ -77,10 +81,8 @@ EXEMPLO:
     ENTRADA:
         -NUM_VAR:
             x1, x2, x3
-        -BOUNDS:
-            [x1 >= 0]
-            [x2 <= 0]
-            [x3 livre]
+        -BOUNDS:    
+            R+ R R+
         -OBJ:
             MAX: 2*x1 + 3*x2 + 5*x3
         -ST:
@@ -91,12 +93,12 @@ EXEMPLO:
     LOGICA:
         3 variaveis (len(NUM_VAR))
         3 restrições (len(ST))
-        dominio: 1 -1 0 (x1 >= 0, x2 <= 0, x3 livre)
+        dominio: 1 0 1 (x1 é R+, x2 R, x3 R+)
         objetivo: 2 3 5 (Como é MAX, *(+1), coeficiente xi para cada coluna == i)
         restrições: 3 2 5 <= 15, 0 0 2 <= 10, 1 -2 0 == 0 (isolando variaveis do lado esquerdo e mantendo coeficientes cxi tal que coluna == i e c é o coeficiente, caso não tenha o c considere 1, caso falte algum ou varios xi considere todos como 0)
 
     SAÍDA ESPERADA:
-        {"lp_lines": ["3", "3", "1 -1 0", "2 3 5", "3 2 5 <= 15", "0 0 2 <= 10", "1 -2 0 == 0"]}
+        {"lp_lines": ["3", "3", "1 0 1", "2 3 5", "3 2 5 <= 15", "0 0 2 <= 10", "1 -2 0 == 0"]}
 
 REGRAS CRÍTICAS:
 - Primeiro tome nota de quantas variaveis (colunas) todas as linhas devem ter.
@@ -161,7 +163,7 @@ def parse_natural_language(problem_text: str, model: str = OLLAMA_MODEL) -> LLMR
 
     # ── Stage 1: understand & simplify (plain text, no JSON pressure) ─────────
     rationale, err1 = _call_ollama(
-        client, model, _PROMPT_SIMPLIFY, problem_text, temperature=0.1
+        client, model, _PROMPT_SIMPLIFY, problem_text, temperature=0.0
     )
     if err1:
         return LLMResult(lp_file="", rationale="", raw_response="", error=err1)

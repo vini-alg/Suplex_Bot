@@ -23,6 +23,7 @@ Solucionador do **Método Simplex** (Fase I + Fase II) com interface web interat
 ```bash
 git clone https://github.com/vini-alg/Suplex_Bot.git
 cd Suplex_Bot
+chmod +x setup.sh
 bash setup.sh          # cria .venv, instala dependências e configura Ollama
 source .venv/bin/activate
 ```
@@ -34,6 +35,7 @@ O `setup.sh` oferece um menu interativo para instalar o Ollama, baixar modelos e
 ## 2. Iniciar a aplicação
 
 ```bash
+chmod +x run_server.sh # Se é a primeira vez que está executando o script
 bash run_server.sh
 ```
 
@@ -61,9 +63,9 @@ streamlit run src/interface/app.py
 ### 3.2 Modelos suportados
 
 ```bash
-ollama pull llama3      # recomendado (4.7 GB, ~8 GB RAM)
-ollama pull mistral     # mais rápido (4.1 GB)
-ollama pull phi3        # máquinas modestas (1.6 GB)
+ollama pull llama3      # recomendado (4.7 GB, ~8 GB RAM) e atualmente testado
+ollama pull mistral     # mais rápido (4.1 GB) não testado
+ollama pull phi3        # máquinas modestas (1.6 GB) não testado
 ```
 
 > O modelo padrão é `llama3`. Altere pelo campo **"Modelo Ollama"** na barra lateral da UI ou via variável de ambiente `OLLAMA_MODEL`.
@@ -179,7 +181,13 @@ Cobertura dos testes:
 
 ---
 
-## 9. Estrutura do Projeto
+## 9. Sujestões
+
+- Teste novos exemplos para verificar a robustez do sistema.
+- Tente usar outros modelos do Ollama para melhorar a precisão da interpretação.
+- Ao rodar, tente ajustar o prompt do LLM para melhorar a interpretação do enunciado. Localizado em `src/backend/llm_parser.py` linha 29.
+
+## 10. Estrutura do Projeto
 
 ```
 Suplex_Bot/
